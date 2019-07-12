@@ -672,7 +672,7 @@ static void dns_transaction_cache_answer(DnsTransaction *t) {
                 return;
 
         /* Caching disabled? */
-        if (!t->scope->manager->enable_cache)
+        if (t->scope->manager->enable_cache == DNS_CACHE_MODE_NO)
                 return;
 
         /* We never cache if this packet is from the local host, under
@@ -690,7 +690,8 @@ static void dns_transaction_cache_answer(DnsTransaction *t) {
                       t->answer_nsec_ttl,
                       0,
                       t->received->family,
-                      &t->received->sender);
+                      &t->received->sender,
+                      t->scope->manager->enable_cache);
 }
 
 static bool dns_transaction_dnssec_is_live(DnsTransaction *t) {

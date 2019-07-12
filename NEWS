@@ -2,6 +2,13 @@ systemd System and Service Manager
 
 CHANGES WITH 243 in spe:
 
+        * systemd-resolved has a "Cache=" option in resolved.conf which
+          has been extended to also accept the 'no-negative' option. Previously
+          only a boolean option was allowed yes/no, having yes as the default.
+          This option skips negative replies from being cached while
+          keeping the same cache heuristics for positive answers.
+          The default remains as "yes" (i. e. caching is enabled).
+
         * Previously, filters defined with SystemCallFilter= would have the
           effect that an calling an offending system call would terminate the
           calling thread. This behaviour never made much sense, since killing
