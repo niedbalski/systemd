@@ -753,7 +753,7 @@ static int parse_argv(int argc, char *argv[]) {
                         r = free_and_strdup(&arg_verify_key, optarg);
                         if (r < 0)
                                 return r;
-                        /* Use memset not string_erase so this doesn't look confusing
+                        /* Use memset not explicit_bzero() or similar so this doesn't look confusing
                          * in ps or htop output. */
                         memset(optarg, 'x', strlen(optarg));
 
@@ -1101,19 +1101,19 @@ static int add_matches(sd_journal *j, char **args) {
                                         if (!comm)
                                                 return log_oom();
 
-                                        t = strappend("_COMM=", comm);
+                                        t = strjoin("_COMM=", comm);
                                         if (!t)
                                                 return log_oom();
 
                                         /* Append _EXE only if the interpreter is not a link.
                                            Otherwise, it might be outdated often. */
                                         if (lstat(interpreter, &st) == 0 && !S_ISLNK(st.st_mode)) {
-                                                t2 = strappend("_EXE=", interpreter);
+                                                t2 = strjoin("_EXE=", interpreter);
                                                 if (!t2)
                                                         return log_oom();
                                         }
                                 } else {
-                                        t = strappend("_EXE=", p);
+                                        t = strjoin("_EXE=", p);
                                         if (!t)
                                                 return log_oom();
                                 }

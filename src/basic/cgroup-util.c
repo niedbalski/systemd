@@ -81,7 +81,7 @@ int cg_read_pid(FILE *f, pid_t *_pid) {
                 if (feof(f))
                         return 0;
 
-                return errno > 0 ? -errno : -EIO;
+                return errno_or_else(EIO);
         }
 
         if (ul <= 0)
@@ -770,10 +770,8 @@ int cg_trim(const char *controller, const char *path, bool delete_root) {
         if (nftw(fs, trim_cb, 64, FTW_DEPTH|FTW_MOUNT|FTW_PHYS) != 0) {
                 if (errno == ENOENT)
                         r = 0;
-                else if (errno > 0)
-                        r = -errno;
                 else
-                        r = -EIO;
+                        r = errno_or_else(EIO);
         }
 
         if (delete_root) {
@@ -1678,9 +1676,8 @@ int cg_path_get_user_unit(const char *path, char **ret) {
         if (!t)
                 return -ENXIO;
 
-        /* And from here on it looks pretty much the same as for a
-         * system unit, hence let's use the same parser from here
-         * on. */
+        /* And from here on it looks pretty much the same as for a system unit, hence let's use the same
+         * parser. */
         return cg_path_get_unit(t, ret);
 }
 
@@ -1924,7 +1921,7 @@ char *cg_escape(const char *p) {
         }
 
         if (need_prefix)
-                return strappend("_", p);
+                return strjoin("_", p);
 
         return strdup(p);
 }
@@ -2502,8 +2499,8 @@ int cg_kernel_controllers(Set **ret) {
                         if (feof(f))
                                 break;
 
-                        if (ferror(f) && errno > 0)
-                                return -errno;
+                        if (ferror(f))
+                                return errno_or_else(EIO);
 
                         return -EBADMSG;
                 }

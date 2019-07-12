@@ -29,6 +29,10 @@ substs.set('PROJECT_VERSION',      meson.project_version())
 # This is to be used instead of meson.source_root(), as the latter will return
 # the wrong result when systemd is being built as a meson subproject
 project_source_root = meson.current_source_dir()
+relative_source_path = run_command('realpath',
+                                   '--relative-to=@0@'.format(meson.current_build_dir()),
+                                   project_source_root).stdout().strip()
+conf.set_quoted('RELATIVE_SOURCE_PATH', relative_source_path)
 
 want_ossfuzz = get_option('oss-fuzz')
 want_libfuzzer = get_option('llvm-fuzz')
@@ -185,6 +189,7 @@ if pamconfdir == ''
 endif
 
 memory_accounting_default = get_option('memory-accounting-default')
+status_unit_format_default = get_option('status-unit-format-default')
 
 conf.set_quoted('PKGSYSCONFDIR',                              pkgsysconfdir)
 conf.set_quoted('SYSTEM_CONFIG_UNIT_PATH',                    join_paths(pkgsysconfdir, 'system'))
@@ -238,6 +243,7 @@ conf.set_quoted('USER_KEYRING_PATH',                          join_paths(pkgsysc
 conf.set_quoted('DOCUMENT_ROOT',                              join_paths(pkgdatadir, 'gatewayd'))
 conf.set10('MEMORY_ACCOUNTING_DEFAULT',                       memory_accounting_default)
 conf.set_quoted('MEMORY_ACCOUNTING_DEFAULT_YES_NO',           memory_accounting_default ? 'yes' : 'no')
+conf.set('STATUS_UNIT_FORMAT_DEFAULT',                        'STATUS_UNIT_FORMAT_' + status_unit_format_default.to_upper())
 
 substs.set('prefix',                                          prefixdir)
 substs.set('rootprefix',                                      rootprefixdir)
@@ -278,6 +284,7 @@ substs.set('SYSTEM_SYSVINIT_PATH',                            sysvinit_path)
 substs.set('SYSTEM_SYSVRCND_PATH',                            sysvrcnd_path)
 substs.set('RC_LOCAL_SCRIPT_PATH_START',                      get_option('rc-local'))
 substs.set('MEMORY_ACCOUNTING_DEFAULT',                       memory_accounting_default ? 'yes' : 'no')
+substs.set('STATUS_UNIT_FORMAT_DEFAULT',                      status_unit_format_default)
 substs.set('HIGH_RLIMIT_NOFILE',                              conf.get('HIGH_RLIMIT_NOFILE'))
 substs.set('BUILD_ROOT',                                      meson.current_build_dir())
 
@@ -1368,6 +1375,7 @@ config_h = configure_file(
 meson_apply_m4 = find_program('tools/meson-apply-m4.sh')
 
 includes = include_directories('src/basic',
+                               'src/boot',
                                'src/shared',
                                'src/systemd',
                                'src/journal',

@@ -1067,6 +1067,15 @@ const char *unit_description(Unit *u) {
         return strna(u->id);
 }
 
+const char *unit_status_string(Unit *u) {
+        assert(u);
+
+        if (u->manager->status_unit_format == STATUS_UNIT_FORMAT_NAME && u->id)
+                return u->id;
+
+        return unit_description(u);
+}
+
 static void print_unit_dependency_mask(FILE *f, const char *kind, UnitDependencyMask mask, bool *space) {
         const struct {
                 UnitDependencyMask mask;
@@ -1134,7 +1143,14 @@ void unit_dump(Unit *u, FILE *f, const char *prefix) {
         prefix2 = strjoina(prefix, "\t");
 
         fprintf(f,
-                "%s-> Unit %s:\n"
+                "%s-> Unit %s:\n",
+                prefix, u->id);
+
+        SET_FOREACH(t, u->names, i)
+                if (!streq(t, u->id))
+                        fprintf(f, "%s\tAlias: %s\n", prefix, t);
+
+        fprintf(f,
                 "%s\tDescription: %s\n"
                 "%s\tInstance: %s\n"
                 "%s\tUnit Load State: %s\n"
@@ -1152,7 +1168,6 @@ void unit_dump(Unit *u, FILE *f, const char *prefix) {
                 "%s\tSlice: %s\n"
                 "%s\tCGroup: %s\n"
                 "%s\tCGroup realized: %s\n",
-                prefix, u->id,
                 prefix, unit_description(u),
                 prefix, strna(u->instance),
                 prefix, unit_load_state_to_string(u->load_state),
@@ -1203,9 +1218,6 @@ void unit_dump(Unit *u, FILE *f, const char *prefix) {
                 (void) cg_mask_to_string(m, &s);
                 fprintf(f, "%s\tCGroup delegate mask: %s\n", prefix, strnull(s));
         }
-
-        SET_FOREACH(t, u->names, i)
-                fprintf(f, "%s\tName: %s\n", prefix, t);
 
         if (!sd_id128_is_null(u->invocation_id))
                 fprintf(f, "%s\tInvocation ID: " SD_ID128_FORMAT_STR "\n",
@@ -1644,7 +1656,7 @@ static bool unit_test_assert(Unit *u) {
 void unit_status_printf(Unit *u, const char *status, const char *unit_status_msg_format) {
         const char *d;
 
-        d = unit_description(u);
+        d = unit_status_string(u);
         if (log_get_show_color())
                 d = strjoina(ANSI_HIGHLIGHT, d, ANSI_NORMAL);
 
@@ -1741,6 +1753,8 @@ int unit_start(Unit *u) {
         state = unit_active_state(u);
         if (UNIT_IS_ACTIVE_OR_RELOADING(state))
                 return -EALREADY;
+        if (state == UNIT_MAINTENANCE)
+                return -EAGAIN;
 
         /* Units that aren't loaded cannot be started */
         if (u->load_state != UNIT_LOADED)
@@ -5739,6 +5753,53 @@ int unit_test_trigger_loaded(Unit *u) {
                 return log_unit_error_errno(u, SYNTHETIC_ERRNO(ENOENT), "Refusing to start, unit %s to trigger not loaded.", u->id);
 
         return 0;
+}
+
+int unit_clean(Unit *u, ExecCleanMask mask) {
+        UnitActiveState state;
+
+        assert(u);
+
+        /* Special return values:
+         *
+         *   -EOPNOTSUPP → cleaning not supported for this unit type
+         *   -EUNATCH    → cleaning not defined for this resource type
+         *   -EBUSY      → unit currently can't be cleaned since it's running or not properly loaded, or has
+         *                 a job queued or similar
+         */
+
+        if (!UNIT_VTABLE(u)->clean)
+                return -EOPNOTSUPP;
+
+        if (mask == 0)
+                return -EUNATCH;
+
+        if (u->load_state != UNIT_LOADED)
+                return -EBUSY;
+
+        if (u->job)
+                return -EBUSY;
+
+        state = unit_active_state(u);
+        if (!IN_SET(state, UNIT_INACTIVE))
+                return -EBUSY;
+
+        return UNIT_VTABLE(u)->clean(u, mask);
+}
+
+int unit_can_clean(Unit *u, ExecCleanMask *ret) {
+        assert(u);
+
+        if (!UNIT_VTABLE(u)->clean ||
+            u->load_state != UNIT_LOADED) {
+                *ret = 0;
+                return 0;
+        }
+
+        /* When the clean() method is set, can_clean() really should be set too */
+        assert(UNIT_VTABLE(u)->can_clean);
+
+        return UNIT_VTABLE(u)->can_clean(u, ret);
 }
 
 static const char* const collect_mode_table[_COLLECT_MODE_MAX] = {

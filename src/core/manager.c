@@ -231,7 +231,7 @@ static void manager_print_jobs_in_progress(Manager *m) {
                               "%sA %s job is running for %s (%s / %s)",
                               strempty(job_of_n),
                               job_type_to_string(j->type),
-                              unit_description(j->unit),
+                              unit_status_string(j->unit),
                               time, limit);
 }
 
@@ -734,6 +734,8 @@ int manager_new(UnitFileScope scope, ManagerTestRunFlags test_run_flags, Manager
                 .unit_file_scope = scope,
                 .objective = _MANAGER_OBJECTIVE_INVALID,
 
+                .status_unit_format = STATUS_UNIT_FORMAT_DEFAULT,
+
                 .default_timer_accuracy_usec = USEC_PER_MINUTE,
                 .default_memory_accounting = MEMORY_ACCOUNTING_DEFAULT,
                 .default_tasks_accounting = true,
@@ -891,7 +893,7 @@ static int manager_setup_notify(Manager *m) {
 
                 fd_inc_rcvbuf(fd, NOTIFY_RCVBUF_SIZE);
 
-                m->notify_socket = strappend(m->prefix[EXEC_DIRECTORY_RUNTIME], "/systemd/notify");
+                m->notify_socket = path_join(m->prefix[EXEC_DIRECTORY_RUNTIME], "systemd/notify");
                 if (!m->notify_socket)
                         return log_oom();
 

@@ -324,8 +324,8 @@
             specified through DHCP is not used for name resolution.
             See option <option>UseDomains=</option> below.</para>
 
-            <para>See the <literal>[DHCP]</literal> section below for further configuration options for the DHCP client
-            support.</para>
+            <para>See the <literal>[DHCPv4]</literal> or <literal>[DHCPv6]</literal> section below for
+            further configuration options for the DHCP client support.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
@@ -1016,9 +1016,9 @@
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term><varname>MACAddress=</varname></term>
+          <term><varname>LinkLayerAddress=</varname></term>
           <listitem>
-            <para>The hardware address of the neighbor.</para>
+            <para>The link layer address (MAC address or IP address) of the neighbor.</para>
           </listitem>
         </varlistentry>
       </variablelist>
@@ -1086,8 +1086,9 @@
         <varlistentry>
           <term><varname>Table=</varname></term>
           <listitem>
-            <para>Specifies the routing table identifier to lookup if the rule
-            selector matches. The table identifier for a route (a number between 1 and 4294967295).</para>
+            <para>Specifies the routing table identifier to lookup if the rule selector matches. Takes
+            one of <literal>default</literal>, <literal>main</literal>, and <literal>local</literal>,
+            or a number between 1 and 4294967295. Defaults to <literal>main</literal>.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
@@ -1232,7 +1233,11 @@
         <varlistentry>
           <term><varname>Type=</varname></term>
           <listitem>
-            <para>Specifies the type for the route. If <literal>unicast</literal>, a regular route is defined, i.e. a
+            <para>Specifies the type for the route. Takes one of <literal>unicast</literal>,
+            <literal>local</literal>, <literal>broadcast</literal>, <literal>anycast</literal>,
+            <literal>multicast</literal>, <literal>blackhole</literal>, <literal>unreachable</literal>,
+            <literal>prohibit</literal>, <literal>throw</literal>, <literal>nat</literal>, and
+            <literal>xresolve</literal>. If <literal>unicast</literal>, a regular route is defined, i.e. a
             route indicating the path to take to a destination network address. If <literal>blackhole</literal>, packets
             to the defined route are discarded silently. If <literal>unreachable</literal>, packets to the defined route
             are discarded and the ICMP message "Host Unreachable" is generated. If <literal>prohibit</literal>, packets
@@ -1299,9 +1304,9 @@
   </refsect1>
 
   <refsect1>
-    <title>[DHCP] Section Options</title>
-      <para>The <literal>[DHCP]</literal> section configures the
-      DHCPv4 and DHCP6 client, if it is enabled with the
+    <title>[DHCPv4] Section Options</title>
+      <para>The <literal>[DHCPv4]</literal> section configures the
+      DHCPv4 client, if it is enabled with the
       <varname>DHCP=</varname> setting described above:</para>
 
       <variablelist class='network-directives'>
@@ -1535,6 +1540,30 @@
         </varlistentry>
 
         <varlistentry>
+          <term><varname>BlackList=</varname></term>
+          <listitem>
+            <para>A whitespace-separated list of IPv4 addresses. DHCP offers from servers in the list are rejected.</para>
+          </listitem>
+        </varlistentry>
+
+       </variablelist>
+   </refsect1>
+
+  <refsect1>
+    <title>[DHCPv6] Section Options</title>
+      <para>The <literal>[DHCPv6]</literal> section configures the DHCPv6 client, if it is enabled with the
+      <varname>DHCP=</varname> setting described above, or invoked by the IPv6 Router Advertisement:</para>
+
+      <variablelist class='network-directives'>
+        <varlistentry>
+          <term><varname>UseDNS=</varname></term>
+          <term><varname>UseNTP=</varname></term>
+          <listitem>
+            <para>As in the <literal>[DHCP]</literal> section.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
           <term><varname>RapidCommit=</varname></term>
           <listitem>
             <para>Takes a boolean. The DHCPv6 client can obtain configuration parameters from a DHCPv6 server through
@@ -1563,15 +1592,8 @@
           </listitem>
         </varlistentry>
 
-        <varlistentry>
-          <term><varname>BlackList=</varname></term>
-          <listitem>
-            <para>A whitespace-separated list of IPv4 addresses. DHCP offers from servers in the list are rejected.</para>
-          </listitem>
-        </varlistentry>
-
       </variablelist>
-    </refsect1>
+  </refsect1>
 
   <refsect1>
     <title>[IPv6AcceptRA] Section Options</title>

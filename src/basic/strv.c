@@ -11,6 +11,7 @@
 #include "escape.h"
 #include "extract-word.h"
 #include "fileio.h"
+#include "memory-util.h"
 #include "nulstr-util.h"
 #include "sort-util.h"
 #include "string-util.h"
@@ -78,9 +79,9 @@ char **strv_free_erase(char **l) {
         char **i;
 
         STRV_FOREACH(i, l)
-                string_erase(*i);
+                erase_and_freep(i);
 
-        return strv_free(l);
+        return mfree(l);
 }
 
 char **strv_copy(char * const *l) {
@@ -232,7 +233,7 @@ int strv_extend_strv_concat(char ***a, char **b, const char *suffix) {
         STRV_FOREACH(s, b) {
                 char *v;
 
-                v = strappend(*s, suffix);
+                v = strjoin(*s, suffix);
                 if (!v)
                         return -ENOMEM;
 

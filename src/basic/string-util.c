@@ -206,10 +206,6 @@ char *strnappend(const char *s, const char *suffix, size_t b) {
         return r;
 }
 
-char *strappend(const char *s, const char *suffix) {
-        return strnappend(s, suffix, strlen_ptr(suffix));
-}
-
 char *strjoin_real(const char *x, ...) {
         va_list ap;
         size_t l;
@@ -1030,20 +1026,6 @@ int free_and_strndup(char **p, const char *s, size_t l) {
 
         free_and_replace(*p, t);
         return 1;
-}
-
-char* string_erase(char *x) {
-        if (!x)
-                return NULL;
-
-        /* A delicious drop of snake-oil! To be called on memory where
-         * we stored passphrases or so, after we used them. */
-        explicit_bzero_safe(x, strlen(x));
-        return x;
-}
-
-char *string_free_erase(char *s) {
-        return mfree(string_erase(s));
 }
 
 bool string_is_safe(const char *p) {

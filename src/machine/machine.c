@@ -11,6 +11,7 @@
 #include "bus-error.h"
 #include "bus-util.h"
 #include "env-file.h"
+#include "errno-util.h"
 #include "escape.h"
 #include "extract-word.h"
 #include "fd-util.h"
@@ -21,6 +22,7 @@
 #include "machine.h"
 #include "mkdir.h"
 #include "parse-util.h"
+#include "path-util.h"
 #include "process-util.h"
 #include "serialize.h"
 #include "special.h"
@@ -52,7 +54,7 @@ Machine* machine_new(Manager *manager, MachineClass class, const char *name) {
                 goto fail;
 
         if (class != MACHINE_HOST) {
-                m->state_file = strappend("/run/systemd/machines/", m->name);
+                m->state_file = path_join("/run/systemd/machines", m->name);
                 if (!m->state_file)
                         goto fail;
         }
@@ -620,7 +622,7 @@ int machine_get_uid_shift(Machine *m, uid_t *ret) {
         k = fscanf(f, UID_FMT " " UID_FMT " " UID_FMT "\n", &uid_base, &uid_shift, &uid_range);
         if (k != 3) {
                 if (ferror(f))
-                        return -errno;
+                        return errno_or_else(EIO);
 
                 return -EBADMSG;
         }
@@ -651,7 +653,7 @@ int machine_get_uid_shift(Machine *m, uid_t *ret) {
         k = fscanf(f, GID_FMT " " GID_FMT " " GID_FMT "\n", &gid_base, &gid_shift, &gid_range);
         if (k != 3) {
                 if (ferror(f))
-                        return -errno;
+                        return errno_or_else(EIO);
 
                 return -EBADMSG;
         }

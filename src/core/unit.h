@@ -475,6 +475,12 @@ typedef struct UnitVTable {
 
         int (*kill)(Unit *u, KillWho w, int signo, sd_bus_error *error);
 
+        /* Clear out the various runtime/state/cache/logs/configuration data */
+        int (*clean)(Unit *u, ExecCleanMask m);
+
+        /* Return which kind of data can be cleaned */
+        int (*can_clean)(Unit *u, ExecCleanMask *ret);
+
         bool (*can_reload)(Unit *u);
 
         /* Write all data that cannot be restored from other sources
@@ -671,6 +677,7 @@ int unit_set_slice(Unit *u, Unit *slice);
 int unit_set_default_slice(Unit *u);
 
 const char *unit_description(Unit *u) _pure_;
+const char *unit_status_string(Unit *u) _pure_;
 
 bool unit_has_name(const Unit *u, const char *name);
 
@@ -853,13 +860,16 @@ int unit_failure_action_exit_status(Unit *u);
 
 int unit_test_trigger_loaded(Unit *u);
 
+int unit_clean(Unit *u, ExecCleanMask mask);
+int unit_can_clean(Unit *u, ExecCleanMask *ret_mask);
+
 /* Macros which append UNIT= or USER_UNIT= to the message */
 
 #define log_unit_full(unit, level, error, ...)                          \
         ({                                                              \
                 const Unit *_u = (unit);                                \
-                _u ? log_object_internal(level, error, __FILE__, __LINE__, __func__, _u->manager->unit_log_field, _u->id, _u->manager->invocation_log_field, _u->invocation_id_string, ##__VA_ARGS__) : \
-                        log_internal(level, error, __FILE__, __LINE__, __func__, ##__VA_ARGS__); \
+                _u ? log_object_internal(level, error, PROJECT_FILE, __LINE__, __func__, _u->manager->unit_log_field, _u->id, _u->manager->invocation_log_field, _u->invocation_id_string, ##__VA_ARGS__) : \
+                        log_internal(level, error, PROJECT_FILE, __LINE__, __func__, ##__VA_ARGS__); \
         })
 
 #define log_unit_debug(unit, ...)   log_unit_full(unit, LOG_DEBUG, 0, ##__VA_ARGS__)
